@@ -3,48 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Prompt Generator</title>
+    <title>OpenAI Model Tester</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>AI Prompt Generator</h1>
-    <form action="/generate/" method="post" enctype="multipart/form-data">
-        <label for="prompt">Enter a prompt:</label>
-        <input type="text" id="prompt" name="prompt" required>
-        
-        <label for="file">Upload a file (optional):</label>
-        <input type="file" id="file" name="file">
-        
+    <h1>OpenAI Model Tester</h1>
+
+    <form action="/generate/" method="post" enctype="multipart/form-data" id="model-form">
+        <label for="model">Select Model:</label>
+        <select id="model" name="model" required>
+            <option value="">--Select a Model--</option>
+            <option value="dall-e-2">DALL·E 2</option>
+            <option value="dall-e-3">DALL·E 3</option>
+            <option value="gpt-4o-mini-audio-preview">GPT-4o mini Audio Preview</option>
+            <option value="gpt-4o-mini-search-preview">GPT-4o mini Search Preview</option>
+            <option value="gpt-4o-mini">GPT-4o mini</option>
+            <option value="omni-moderation-latest">Omni Moderation</option>
+            <option value="text-embedding-3-large">Text Embedding 3 Large</option>
+            <option value="text-embedding-3-small">Text Embedding 3 Small</option>
+            <option value="text-embedding-ada-002">Text Embedding 3 Ada</option>
+            <option value="tts-1">TTS-1</option>
+            <option value="whisper-1">Whisper</option>
+        </select>
+
+        <div id="prompt-input" class="input-section" style="display: none;">
+            <label for="prompt">Enter Prompt:</label>
+            <textarea id="prompt" name="prompt" rows="4"></textarea>
+        </div>
+
+        <div id="image-input" class="input-section" style="display: none;">
+            <label for="image_file">Upload Image:</label>
+            <input type="file" id="image_file" name="image_file" accept="image/*">
+        </div>
+
+        <div id="audio-input" class="input-section" style="display: none;">
+            <label for="audio_file">Upload Audio:</label>
+            <input type="file" id="audio_file" name="audio_file" accept="audio/*">
+        </div>
+
         <button type="submit">Generate</button>
     </form>
 
-    {% if generated_text %}
-    <div class="result">
-        <h2>Generated Text:</h2>
-        <p>{{ generated_text }}</p>
-    </div>
-    {% endif %}
+    <div id="results">
+        {% if generated_text %}
+        <div class="result">
+            <h2>Generated Text:</h2>
+            <pre><code>{{ generated_text }}</code></pre>
+        </div>
+        {% endif %}
 
-    {% if generated_image_url %}
-    <div class="result">
-        <h2>Generated Image:</h2>
-        <img src="{{ generated_image_url }}" alt="AI-generated Image">
-    </div>
-    {% endif %}
+        {% if generated_image_url %}
+        <div class="result">
+            <h2>Generated Image:</h2>
+            <img src="{{ generated_image_url }}" alt="AI-generated Image" style="max-width: 512px;">
+        </div>
+        {% endif %}
 
-    {% if uploaded_file_path %}
-    <div class="result">
-        <h2>Uploaded File:</h2>
-        <p>File saved at: {{ uploaded_file_path }}</p>
-    </div>
-    {% endif %}
+         {% if generated_audio_url %}
+        <div class="result">
+            <h2>Generated Audio:</h2>
+            <audio controls>
+                <source src="{{ generated_audio_url }}" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+        {% endif %}
 
-    {% if error %}
-    <div class="error">
-        <h2>Error:</h2>
-        <p>{{ error }}</p>
+        {% if error %}
+        <div class="error">
+            <h2>Error:</h2>
+            <p>{{ error }}</p>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
+
+    <script>
+        const modelSelect = document.getElementById('model');
+        const promptInput = document.getElementById('prompt-input');
+        const imageInput = document.getElementById('image-input');
+        const audioInput = document.getElementById('audio-input');
+        const promptTextarea = document.getElementById('prompt');
+        const imageFile = document.getElementById('image_file');
+        const audioFile = document.getElementById('audio_file');
+
+        const modelInputs = {
+            'text': ['prompt'],
+            'image_gen': ['prompt'],
+            'audio_transcription': ['audio'],
+            'audio_generation': ['prompt'],
+            'embedding': ['prompt'],
+            'moderation': ['prompt'],
+            'vision': ['prompt', 'image']
+        };
+
+        const modelTypeMap = {
+            'dall-e-2': 'image_gen',
+            'dall-e-3': 'image_gen',
+            'gpt-4o-mini-audio-preview': 'audio_transcription',
+            'gpt-4o-mini-search-preview': 'text',
+            'gpt-4o-mini': 'text',
+            'omni-moderation-latest': 'moderation',
+            'text-embedding-3-large': 'embedding',
+            'text-embedding-3-small': 'embedding',
+            'text-embedding-ada-002': 'embedding',
+            'tts-1': 'audio_generation',
+            'whisper-1': 'audio_transcription'
+        };
+
+        modelSelect.addEventListener('change', function() {
+            const selectedModel = this.value;
+            const modelType = modelTypeMap[selectedModel] || '';
+            const requiredInputs = modelInputs[modelType] || [];
+
+            // Hide all inputs initially
+            promptInput.style.display = 'none';
+            imageInput.style.display = 'none'; // Keep image hidden for now
+            audioInput.style.display = 'none';
+
+            // Reset required attribute and value
+            promptTextarea.required = false;
+            promptTextarea.value = promptTextarea.defaultValue; // Clear previous input
+            // imageFile.required = false; // Not used yet
+            // imageFile.value = imageFile.defaultValue;
+            audioFile.required = false;
+            audioFile.value = audioFile.defaultValue; // Clear previous file selection
+
+
+            // Show required inputs and set required attribute
+            if (requiredInputs.includes('prompt')) {
+                promptInput.style.display = 'block';
+                promptTextarea.required = true;
+            }
+            // if (requiredInputs.includes('image')) { // Keep image input hidden for now
+            //     imageInput.style.display = 'block';
+            //     imageFile.required = true;
+            // }
+            if (requiredInputs.includes('audio')) {
+                audioInput.style.display = 'block';
+                audioFile.required = true;
+            }
+        });
+
+        // Trigger change event on page load if a model is pre-selected (e.g., after form submission)
+        // This helps retain the correct input fields visibility if the page reloads with an error
+        document.addEventListener('DOMContentLoaded', () => {
+             if (modelSelect.value) {
+                modelSelect.dispatchEvent(new Event('change'));
+            }
+        });
+    </script>
 </body>
 </html>
-
