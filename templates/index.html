@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Prompt Generator</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>AI Prompt Generator</h1>
+    <form action="/generate/" method="post" enctype="multipart/form-data">
+        <label for="prompt">Enter a prompt:</label>
+        <input type="text" id="prompt" name="prompt" required>
+        
+        <label for="file">Upload a file (optional):</label>
+        <input type="file" id="file" name="file">
+        
+        <button type="submit">Generate</button>
+    </form>
+
+    {% if generated_text %}
+    <div class="result">
+        <h2>Generated Text:</h2>
+        <p>{{ generated_text }}</p>
+    </div>
+    {% endif %}
+
+    {% if generated_image_url %}
+    <div class="result">
+        <h2>Generated Image:</h2>
+        <img src="{{ generated_image_url }}" alt="AI-generated Image">
+    </div>
+    {% endif %}
+
+    {% if uploaded_file_path %}
+    <div class="result">
+        <h2>Uploaded File:</h2>
+        <p>File saved at: {{ uploaded_file_path }}</p>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="error">
+        <h2>Error:</h2>
+        <p>{{ error }}</p>
+    </div>
+    {% endif %}
+</body>
+</html>
+
